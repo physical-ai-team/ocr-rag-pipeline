@@ -1,0 +1,30 @@
+.qrp {
+  background: #121824;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  padding: 20px;
+  color: #f8fafc;
+  font-family: 'Inter', sans-serif;
+  max-width: 360px;
+}
+.qrp-head { display: flex; justify-content: space-between; align-items: center; }
+.qrp-head h3 { margin: 0; font-size: 16px; }
+.qrp-badge { font-size: 12px; font-weight: 700; color: #94a3b8; }
+.qrp-badge.on { color: #4ade8a; }
+.qrp-qr { background: #fff; border-radius: 12px; padding: 8px; margin: 16px auto 8px; width: fit-content; }
+.qrp-url { font-size: 11px; color: #94a3b8; word-break: break-all; margin: 0 0 8px; }
+.qrp-warn { font-size: 12px; color: #fbbf24; line-height: 1.6; margin: 8px 0; }
+.qrp-error { font-size: 12px; color: #f87171; line-height: 1.6; margin: 8px 0; }
+.qrp-live p { font-size: 13px; color: #4ade8a; margin: 8px 0 6px; }
+.qrp-preview { width: 100%; border-radius: 8px; border: 1px solid #1e293b; }
+.qrp-btn {
+  margin-top: 12px;
+  width: 100%;
+  background: #1e293b;
+  color: #f8fafc;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}

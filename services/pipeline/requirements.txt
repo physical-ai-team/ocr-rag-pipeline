@@ -1,0 +1,9 @@
+# torch/torchvision 은 Dockerfile 에서 CPU 전용 버전으로 먼저 설치한다 (GPU 버전은 몇 GB 라서)
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+python-dotenv==1.0.1
+pillow==13.0.0
+numpy==2.4.6
+supabase==2.33.0
+sentence-transformers==6.2.0
+easyocr==1.7.2
