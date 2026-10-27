@@ -1,70 +1,70 @@
-# Getting Started with Create React App
+# OCR & RAG Pipeline
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## 개발 환경 세팅 (처음 한 번만)
 
-## Available Scripts
+### 1. 프로그램 설치
 
-In the project directory, you can run:
+| 프로그램 | 버전 | 다운로드 |
+| --- | --- | --- |
+| Git | 최신 | https://git-scm.com/downloads |
+| Node.js | **20 LTS** | https://nodejs.org (20.x 버전 선택) |
+| Miniconda | 최신 | https://docs.conda.io/en/latest/miniconda.html |
 
-### `npm start`
+> Windows에서 Miniconda 설치 후에는 시작 메뉴의 **Anaconda Prompt**에서 아래 명령어를 실행하세요.
+> (VS Code 터미널에서 쓰려면 Anaconda Prompt에서 `conda init powershell` 실행 후 VS Code를 재시작)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+설치 확인:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```bash
+git --version
+node --version    # v20.x.x 가 나와야 함
+conda --version
+```
 
-### `npm test`
+### 2. 프로젝트 받기
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+git clone <레포 주소>
+cd ocr-rag-pipeline
+```
 
-### `npm run build`
+### 3. Python 가상환경 만들기
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+conda env create -f environment.yml
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 4. 프론트엔드 패키지 설치
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+npm ci
+```
 
-### `npm run eject`
+> `npm install`이 아니라 `npm ci`를 쓰세요. `package-lock.json`과 똑같은 버전으로 설치됩니다.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 매일 작업할 때
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+git pull
+conda activate ocr-rag    # 터미널 앞에 (ocr-rag) 가 보이면 성공
+npm start                 # 프론트엔드 실행 → http://localhost:3000
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## 누군가 패키지를 추가했다고 공지하면
 
-## Learn More
+```bash
+git pull
+conda env update -f environment.yml --prune   # Python 패키지
+npm ci                                         # 프론트엔드 패키지
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 패키지를 추가하고 싶을 때 (규칙)
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- **Python**: `pip install`만 하고 끝내지 말고, `environment.yml`의 `pip:` 아래에 `패키지명==버전`을 추가 → 커밋 → 팀에 공지
+- **프론트엔드**: `npm install 패키지명` → 바뀐 `package.json`, `package-lock.json` 둘 다 커밋 → 팀에 공지
 
-### Code Splitting
+## 주의
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- API 키 같은 비밀값은 `.env` 파일에 넣고 **절대 커밋하지 마세요** (`.gitignore`에 등록되어 있음).
