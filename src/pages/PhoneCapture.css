@@ -1,0 +1,39 @@
+.phone {
+  min-height: 100vh;
+  background: #0a0d14;
+  color: #f8fafc;
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+.phone-video {
+  width: 100%;
+  max-height: 65vh;
+  background: #000;
+  object-fit: contain;
+}
+.phone-panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.phone-btn {
+  background: #38bdf8;
+  color: #0a0d14;
+  border: 0;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.phone-btn.secondary {
+  background: #1e293b;
+  color: #f8fafc;
+}
+.phone-ok { color: #4ade8a; margin: 0; font-weight: 600; }
+.phone-warn { color: #fbbf24; margin: 0; font-weight: 600; }
+.phone-meta { color: #94a3b8; margin: 0; font-size: 14px; }
+.phone-hint { color: #94a3b8; margin: 0; font-size: 13px; line-height: 1.6; }
+.phone-error { color: #f87171; margin: 0; padding: 16px; line-height: 1.6; }

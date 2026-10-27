@@ -2,12 +2,21 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
+import PhoneCapture from './pages/PhoneCapture';
+import PairPage from './pages/PairPage';
 import reportWebVitals from './reportWebVitals';
+
+// 라우터 없이 주소(path)만 보고 화면을 고른다.
+//   /m     폰 촬영 페이지 (QR 로 열리는 주소)
+//   /pair  QR 연동 확인 페이지
+//   그 외  기존 App
+const pages = { '/m': PhoneCapture, '/pair': PairPage };
+const Page = pages[window.location.pathname] || App;
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <Page />
   </React.StrictMode>
 );
 
