@@ -1,0 +1,39 @@
+# 전체 실행:  npm run build  →  docker compose up --build
+# 접속:       http://localhost:8000/dashboard
+#
+#   폰 ─프레임→ api ─프레임→ pipeline ─저장→ Supabase (키가 없으면 pipeline 메모리)
+#                │ ◀─저장 결과─┘
+#                └─ 대시보드(저장 현황 WebSocket, RAG 검색) / Gemini 답변
+#
+# 키(SUPABASE_*, GEMINI_API_KEY)는 레포 루트의 .env 에 넣는다. (.env.example 참고, .env 는 커밋 금지)
+services:
+  pipeline:
+    build: ./services/pipeline
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      # 처음 실행 때 내려받는 OCR·임베딩 모델을 보관 (다시 켤 때 재다운로드 안 함)
+      - model-cache:/root/.cache
+      - easyocr-models:/root/.EasyOCR
+    # 포트를 밖으로 열지 않는다. api 만 http://pipeline:8001 로 부른다
+
+  api:
+    build: ./services/api
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PIPELINE_URL: http://pipeline:8001
+      FRONTEND_DIR: /frontend
+    volumes:
+      # npm run build 결과를 api 가 같은 주소로 서빙 (폰 테스트 때 터널 하나로 충분)
+      - ./build:/frontend:ro
+    depends_on:
+      - pipeline
+
+volumes:
+  model-cache:
+  easyocr-models:
