@@ -39,6 +39,7 @@
 | 주소 | 용도 |
 | --- | --- |
 | `GET /api/stored?limit=30` | `{items:[{id,text,meta}], total}` 최근 저장 문장 목록 |
+| `GET /api/pipeline` | `{reachable, ready, load_error, store}` pipeline 상태 (대시보드의 "모델 불러오는 중" 안내) |
 | `GET /api/passages` | `{passages:[{no,title,sentences,first_ts,last_ts}], untitled_sentences, total_sentences}` 카드 제목으로 묶은 지문 목록 |
 | `WS /api/ws/stored` | 서버 → 대시보드: `{"type":"stored","items":[...],"total":n}` (새로 저장될 때만) |
 | `POST /api/rag` | `{"question":"...","k":5}` → `{answer, sources:[{n,id,text,score}], model}` |
@@ -108,6 +109,8 @@ cd services/pipeline && pytest   # FAKE_MODELS=1 + 메모리 저장소라 모델
 
 - [x] Supabase 키 받아서 `.env` 에 넣고 실제 DB 로 확인
 - [x] Gemini 키 넣고 실제 답변 확인 (영어·한국어 질문, 없는 내용 질문)
-- [ ] RAG 정확도 평가 세트 (`src/data/passages.js` 를 정답지로 질문 30~50개)
+- [x] RAG 정확도 평가 세트 — `eval/rag_questions.json` (42개), `python eval/rag_eval.py --out eval/result.md`
+  - 저장(OCR) / 검색 / 답변 단계별로 채점해서 어디서 틀렸는지 보인다
+  - Gemini 무료 한도 때문에 질문 사이 4초씩 쉰다 (전체 약 3분)
 - [x] 문장 대신 "지문" 단위로 묶어서 저장 현황에 제목 표시
 - [ ] 기존 `App.js` 랜딩 페이지와 `/dashboard` 연결 (프론트 담당과 상의)

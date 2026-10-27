@@ -2,7 +2,7 @@
 
 OCR 및 벡터 임베딩 기반 영문 텍스트 추출·검색 파이프라인
 
-- [처음 세팅 가이드 (conda 처음이면 여기부터)](docs/00-처음-세팅-가이드.md) · [기획](docs/01-기획.md) · [아키텍처·Docker 구성](docs/02-아키텍처-도커.md) · [Git 작업 규칙](docs/03-Git-작업규칙.md) · [QR·영상 전송](docs/04-QR-영상전송.md) · [저장 현황·RAG·Docker 실행](docs/05-저장현황-RAG-도커.md)
+- [처음 세팅 가이드 (conda 처음이면 여기부터)](docs/00-처음-세팅-가이드.md) · [기획](docs/01-기획.md) · [아키텍처·Docker 구성](docs/02-아키텍처-도커.md) · [Git 작업 규칙](docs/03-Git-작업규칙.md) · [QR·영상 전송](docs/04-QR-영상전송.md) · [저장 현황·RAG·Docker 실행](docs/05-저장현황-RAG-도커.md) · [시연 체크리스트](docs/06-시연-체크리스트.md)
 
 ## 전체 실행 (Docker)
 
