@@ -65,6 +65,11 @@ class OCREngine:
                     cols.append([it])
                     col_right = it[2]
 
+            # 화면 좌우 끝에서 잘린 카드는 버림: 이미지 가장자리에 닿거나, 다른 카드보다 눈에 띄게 좁은 열
+            # (컨베이어가 움직이면 다음 프레임에서 카드가 온전히 보일 때 다시 읽힘)
+            if config.FULL_SENTENCES:
+                cols = self._drop_cut_columns(cols, img.size[0])
+
             # 2) 열 안에서 박스 왼쪽 위 좌표로 읽기 순서 정렬 (같은 줄 판정은 높이의 절반 기준)
             out = []
             for col in cols:
@@ -87,6 +92,23 @@ class OCREngine:
             return out
 
         return [self._read_tesseract(img)]
+
+    @staticmethod
+    def _drop_cut_columns(cols: list[list[tuple]], img_w: int) -> list[list[tuple]]:
+        margin = img_w * 0.01
+        span = lambda col: (min(it[1] for it in col), max(it[2] for it in col))
+        # 줄이 3개 이상인 열(=본문 카드)의 가장 넓은 폭을 기준으로 삼음
+        widths = [x1 - x0 for col in cols if len(col) >= 3 for x0, x1 in [span(col)]]
+        full_w = max(widths, default=0)
+        kept = []
+        for col in cols:
+            x0, x1 = span(col)
+            if x0 <= margin or x1 >= img_w - margin:
+                continue
+            if len(widths) >= 2 and x1 - x0 < full_w * 0.75:
+                continue
+            kept.append(col)
+        return kept
 
     def _read_tesseract(self, img: Image.Image) -> list[tuple[str, float]]:
         # tesseract: 단어 단위 결과를 줄 단위로 묶음
@@ -116,8 +138,16 @@ def is_english(text: str) -> bool:
     return sum(c.isascii() for c in letters) / len(letters) >= 0.9
 
 
+def is_heading(text: str) -> bool:
+    """마침표 없이 대문자로만 된 줄 = 카드 제목 (예: THE QUIET MACHINERY OF CITIES)"""
+    letters = [c for c in text if c.isalpha()]
+    return bool(letters) and all(c.isupper() for c in letters) and not re.search(r"[.!?]\s*$", text)
+
+
 def clean_text(lines: list[tuple[str, float]]) -> str:
     kept = [t for t, c in lines if c >= config.OCR_MIN_CONF and is_english(t)]
+    while kept and is_heading(kept[0]):   # 맨 위 제목 줄은 본문 첫 문장에 붙지 않게 뺌
+        kept = kept[1:]
     text = " ".join(kept)
     text = re.sub(r"(\w)-\s+(\w)", r"\1\2", text)   # 줄바꿈 하이픈 합치기
     text = re.sub(r"\s+", " ", text)
@@ -126,6 +156,7 @@ def clean_text(lines: list[tuple[str, float]]) -> str:
     text = re.sub(r"[:;_](?=\s+[A-Z])", ".", text)
     text = re.sub(r"[:;_]\s*$", ".", text)
     text = re.sub(r"(\w)_", r"\1,", text)            # 나머지 _ 는 대부분 쉼표
+    text = re.sub(r"(?<=[a-z] )&(?= [a-z])", "a", text)  # 소문자 단어 사이 & 는 대부분 a 를 잘못 읽은 것
     return text.strip()
 
 
