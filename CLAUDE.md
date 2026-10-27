@@ -6,6 +6,7 @@
 
 PC 웹페이지의 영어 원문을 휴대폰 카메라로 실시간 촬영 → OCR → 임베딩 → Vector DB 저장 → RAG 검색하는 파이프라인.
 
+- 처음 세팅(conda 초보용): [docs/00-처음-세팅-가이드.md](docs/00-처음-세팅-가이드.md)
 - 기획: [docs/01-기획.md](docs/01-기획.md)
 - 아키텍처·Docker 구성(초안): [docs/02-아키텍처-도커.md](docs/02-아키텍처-도커.md)
 - Git 규칙: [docs/03-Git-작업규칙.md](docs/03-Git-작업규칙.md)
