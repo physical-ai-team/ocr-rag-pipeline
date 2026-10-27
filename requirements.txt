@@ -1,0 +1,8 @@
+python-dotenv>=1.0
+pillow>=10.0
+numpy>=1.26
+supabase>=2.4
+sentence-transformers>=2.7
+easyocr>=1.7
+# 선택: OCR_ENGINE=tesseract 사용 시 (Tesseract 본체는 별도 설치)
+pytesseract>=0.3.10
