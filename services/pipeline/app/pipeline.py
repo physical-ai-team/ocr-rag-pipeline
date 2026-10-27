@@ -7,6 +7,7 @@ import hashlib
 import io
 import json
 import re
+import string
 import time
 import uuid
 
@@ -74,13 +75,14 @@ class OCREngine:
             out = []
             for col in cols:
                 col.sort(key=lambda t: (t[0], t[1]))
-                lines, cur, cur_y, cur_h = [], [], None, None
+                lines, line_ys, cur, cur_y, cur_h = [], [], [], None, None
                 for y, x, _, h, text, conf in col:
                     if cur and abs(y - cur_y) > cur_h * 0.5:
                         lines.append(cur)
                         cur = []
                     if not cur:
                         cur_y, cur_h = y, h
+                        line_ys.append(y)
                     cur.append((x, text, conf))
                 if cur:
                     lines.append(cur)
@@ -88,7 +90,7 @@ class OCREngine:
                 for ln in lines:
                     ln.sort(key=lambda t: t[0])
                     col_lines.append((" ".join(t[1] for t in ln), sum(t[2] for t in ln) / len(ln)))
-                out.append(col_lines)
+                out.append(mark_paragraph_ends(col_lines, line_ys))
             return out
 
         return [self._read_tesseract(img)]
@@ -144,11 +146,70 @@ def is_heading(text: str) -> bool:
     return bool(letters) and all(c.isupper() for c in letters) and not re.search(r"[.!?]\s*$", text)
 
 
+_ENDS_SENTENCE = re.compile(r"[.!?][\"')\]]?\s*$")
+_TITLE_SMALL_WORDS = {"a", "an", "and", "at", "for", "from", "in", "of", "on", "or", "the", "to", "with"}
+# 문장 첫머리에 자주 오는 단어. 소문자 단어 바로 뒤에 이게 대문자로 나오면 OCR 이 마침표를 놓친 것으로 본다
+# ('beauty A pen' → 'beauty. A pen'). 고유명사(Thursday, China…)는 목록에 없어서 건드리지 않는다
+_SENTENCE_STARTERS = ("A|An|The|They|It|He|She|We|You|This|That|These|Those|There|Its|His|Her|Their|Our|My|"
+                      "In|On|At|For|But|If|When|After|Before|Nobody|Everyone|Nothing|Everything")
+_MISSED_PERIOD = re.compile(rf"(?<=[a-z])\s+(?=(?:{_SENTENCE_STARTERS})\s+[a-z])")
+
+
+def end_sentence(text: str) -> str:
+    """줄 끝을 문장 끝으로 만든다. OCR 이 마침표를 : ; _ , 로 읽었으면 바꾸고, 없으면 붙인다."""
+    return text.rstrip(" \t:;_,") + "."
+
+
+def is_title_line(text: str) -> bool:
+    """카드 제목 줄인지: 마침표로 끝나지 않고, 단어가 (짧은 관사·전치사 빼고) 모두 대문자로 시작.
+    카드 제목은 대문자로 표시되지만 OCR 이 'How BREAD FAILS', 'ON Losing Things' 처럼 섞어 읽어서
+    is_heading(전부 대문자)만으로는 놓친다."""
+    if _ENDS_SENTENCE.search(text):
+        return False
+    words = [w for w in re.findall(r"[A-Za-z][A-Za-z'’]*", text)]
+    if not words or sum(len(w) for w in words) < 3:
+        return False
+    return is_heading(text) or all(w[0].isupper() or w.lower() in _TITLE_SMALL_WORDS for w in words)
+
+
+def mark_paragraph_ends(lines: list[tuple[str, float]], ys: list[float]) -> list[tuple[str, float]]:
+    """줄 간격이 유난히 넓은 곳(= 문단이 바뀌는 곳) 앞 줄이 마침표로 안 끝나면 마침표를 붙인다.
+    문단 끝의 짧은 단어(예: 'hand.')를 OCR 이 놓치면 두 문단이 한 문장으로 합쳐지는 것을 막는다."""
+    if len(lines) < 3 or len(ys) != len(lines):
+        return lines
+    gaps = [b - a for a, b in zip(ys, ys[1:])]
+    pitch = sorted(gaps)[(len(gaps) - 1) // 2]   # 보통 줄 간격 (중앙값, 짝수 개면 작은 쪽: 문단 간격이 기준이 되지 않게)
+    out = list(lines)
+    for i, gap in enumerate(gaps):
+        text, conf = out[i]
+        if pitch > 0 and gap > pitch * 1.25 and not _ENDS_SENTENCE.search(text) and not is_title_line(text):
+            out[i] = (end_sentence(text), conf)
+    return out
+
+
+def clean_card(lines: list[tuple[str, float]]) -> tuple[str | None, str]:
+    """카드(열) 하나의 줄 목록 → (제목, 본문 텍스트). 제목이 안 보이면 None."""
+    kept = []
+    for t, c in lines:
+        if c >= config.OCR_MIN_CONF and is_english(t):
+            kept.append(t)
+        elif kept and _ENDS_SENTENCE.search(t) and not _ENDS_SENTENCE.search(kept[-1]):
+            # 버리는 줄(예: 신뢰도 낮은 'hand.')이 문장 끝이었으면 그 경계는 남긴다
+            kept[-1] = end_sentence(kept[-1])
+    title_lines = []
+    while kept and len(title_lines) < 3 and is_title_line(kept[0]):   # 맨 위 제목 줄(최대 3줄)은 따로 뺀다
+        title_lines.append(kept.pop(0))
+    # OCR 이 대소문자를 제각각 읽으므로 항상 같은 모양으로: 'ON Losing Things' → 'On Losing Things'
+    # (str.title 은 "Cartographer's" 를 "Cartographer'S" 로 만들어서 capwords 를 쓴다)
+    title = string.capwords(" ".join(title_lines)) if title_lines else None
+    return title, _tidy(" ".join(kept))
+
+
 def clean_text(lines: list[tuple[str, float]]) -> str:
-    kept = [t for t, c in lines if c >= config.OCR_MIN_CONF and is_english(t)]
-    while kept and is_heading(kept[0]):   # 맨 위 제목 줄은 본문 첫 문장에 붙지 않게 뺌
-        kept = kept[1:]
-    text = " ".join(kept)
+    return clean_card(lines)[1]
+
+
+def _tidy(text: str) -> str:
     text = re.sub(r"(\w)-\s+(\w)", r"\1\2", text)   # 줄바꿈 하이픈 합치기
     text = re.sub(r"\s+", " ", text)
     text = re.sub(r"\s+([,.;:!?])", r"\1", text)
@@ -157,6 +218,7 @@ def clean_text(lines: list[tuple[str, float]]) -> str:
     text = re.sub(r"[:;_]\s*$", ".", text)
     text = re.sub(r"(\w)_", r"\1,", text)            # 나머지 _ 는 대부분 쉼표
     text = re.sub(r"(?<=[a-z] )&(?= [a-z])", "a", text)  # 소문자 단어 사이 & 는 대부분 a 를 잘못 읽은 것
+    text = _MISSED_PERIOD.sub(". ", text)
     return text.strip()
 
 
@@ -328,29 +390,34 @@ class Pipeline:
             img.thumbnail((1600, 1600))
         return img
 
+    def _already_seen(self, sent: str) -> bool:
+        """이미 처리한 문장이거나, 이미 저장한 문장을 통째로 품은 '두 문장이 붙은' 버전이면 True."""
+        n = normalize(sent)
+        return n in self._seen or any(len(s) >= 20 and s in n for s in self._seen)
+
     def process_frame(self, jpeg: bytes, session: str, frame_no: int, img=None) -> dict:
         t0 = time.time()
         img = img or self.decode(jpeg)
 
         # 03 OCR
         cols = self.ocr.read_columns(img)
-        col_texts = [t for t in (clean_text(c) for c in cols) if t]
-        text = "\n".join(col_texts)
+        cards = [(title, t) for title, t in (clean_card(c) for c in cols) if t]
+        text = "\n".join(t for _, t in cards)
         t_ocr = time.time()
 
         result = {"frame_no": frame_no, "raw_lines": sum(len(c) for c in cols), "text": text,
                   "stored": [], "duplicates": 0, "ocr_ms": int((t_ocr - t0) * 1000)}
-        # 열(카드)마다 따로 문장 분리 → 카드 경계에서 잘린 문장도 카드별로 버려짐
-        sentences = [s for t in col_texts for s in split_sentences(t)]
-        fresh = [s for s in sentences if normalize(s) not in self._seen]
+        # 열(카드)마다 따로 문장 분리 → 카드 경계에서 잘린 문장도 카드별로 버려짐. 문장마다 카드 제목을 같이 들고 간다
+        sentences = [(s, title) for title, t in cards for s in split_sentences(t)]
+        fresh = [(s, title) for s, title in sentences if not self._already_seen(s)]
         result["duplicates"] += len(sentences) - len(fresh)
         if not fresh:
             result["total_ms"] = int((time.time() - t0) * 1000)
             return result
 
         # 04 임베딩 → 중복 검사 → 저장
-        embs = self.embedder.encode(fresh)
-        for sent, emb in zip(fresh, embs):
+        embs = self.embedder.encode([s for s, _ in fresh])
+        for (sent, title), emb in zip(fresh, embs):
             near = self.store.nearest(emb, 1)
             if near and near[0]["score"] >= config.DEDUP_SIM:
                 result["duplicates"] += 1
@@ -358,6 +425,8 @@ class Pipeline:
                 continue
             meta = {"session": session, "ts": time.time(), "frame_no": frame_no,
                     "chars": len(sent), "source": "phone_camera_ocr"}
+            if title:
+                meta["title"] = title
             _id = self.store.add(sent, emb, meta)
             self._seen.add(normalize(sent))
             result["stored"].append({
