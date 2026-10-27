@@ -1,0 +1,307 @@
+/* 원문 컨베이어 (/conveyor). CRA 는 모든 CSS 를 전역으로 합치므로 클래스는 전부 conveyor- 로 시작한다. */
+.conveyor {
+  --chassis: #16181d;
+  --chassis-2: #1e2128;
+  --line: #2c313b;
+  --ink: #e8eaed;
+  --muted: #8c94a3;
+  --signal: #4ade8a;
+
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 18px;
+  height: 100vh;
+  padding: 18px;
+  overflow: hidden;
+  background: var(--chassis);
+  color: var(--ink);
+  font-family: 'Inter', 'Pretendard', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.conveyor,
+.conveyor * {
+  box-sizing: border-box;
+}
+
+/* ---------- 왼쪽: 컨베이어 ---------- */
+.conveyor-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  min-width: 0;
+  background: radial-gradient(ellipse at 50% 40%, #23272f 0%, #16181d 75%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px 0;
+  overflow: hidden;
+}
+
+.conveyor-lane {
+  position: relative;
+  overflow: hidden;
+  padding: 10px 0 0;
+}
+
+.conveyor-track,
+.conveyor-group {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--conveyor-gap);
+}
+.conveyor-track {
+  will-change: transform;
+}
+
+/* 물품 = 카드 */
+.conveyor-item {
+  --card: #ffffff;
+  --card-ink: #101215;
+  position: relative;
+  flex: 0 0 auto;
+  aspect-ratio: 9 / 16;
+  height: var(--conveyor-card-h);
+  background: var(--card);
+  color: var(--card-ink);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5), 0 2px 0 rgba(255, 255, 255, 0.06) inset;
+  content-visibility: auto;
+}
+
+.conveyor-item-body {
+  height: 100%;
+  padding: 8% 7%;
+  overflow: hidden;
+  font-size: var(--conveyor-fs);
+  line-height: var(--conveyor-lh);
+  letter-spacing: 0.01em;
+  word-spacing: 0.05em;
+}
+
+.conveyor-idx {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.35;
+}
+
+.conveyor-item h2 {
+  margin: 0 0 1.1em;
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+.conveyor-item p {
+  margin: 0 0 1.1em;
+}
+.conveyor-item p:last-child {
+  margin-bottom: 0;
+}
+
+/* 서체 */
+.conveyor-stage[data-face='serif'] .conveyor-item-body {
+  font-family: 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+}
+.conveyor-stage[data-face='sans'] .conveyor-item-body {
+  font-family: 'Helvetica Neue', Arial, 'Segoe UI', sans-serif;
+}
+.conveyor-stage[data-face='mono'] .conveyor-item-body {
+  font-family: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+}
+
+/* 지면 테마 */
+.conveyor-stage[data-theme='paper'] .conveyor-item {
+  --card: #f6f1e4;
+  --card-ink: #23201a;
+}
+.conveyor-stage[data-theme='dark'] .conveyor-item {
+  --card: #101215;
+  --card-ink: #f2f4f7;
+}
+.conveyor-stage[data-theme='lowc'] .conveyor-item {
+  --card: #d9d9d9;
+  --card-ink: #6a6a6a;
+}
+
+/* 안전여백 가이드 */
+.conveyor-item::after {
+  content: '';
+  position: absolute;
+  inset: 8% 7%;
+  border: 1px dashed rgba(74, 222, 138, 0.55);
+  opacity: 0;
+  pointer-events: none;
+}
+.conveyor-stage[data-guides] .conveyor-item::after {
+  opacity: 1;
+}
+
+/* 벨트 표면 */
+.conveyor-belt {
+  height: 26px;
+  margin-top: 12px;
+  border-top: 1px solid #33383f;
+  border-bottom: 1px solid #101215;
+  background-color: #23262c;
+  background-image: repeating-linear-gradient(90deg, #2b2f36 0px, #2b2f36 22px, #1c1f24 22px, #1c1f24 26px);
+  box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.45);
+}
+
+.conveyor-meta {
+  display: flex;
+  gap: 16px;
+  padding: 0 22px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.conveyor-meta b {
+  color: var(--signal);
+  font-weight: 600;
+}
+
+/* ---------- 오른쪽: 조절 패널 ---------- */
+.conveyor-panel {
+  background: var(--chassis-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  overflow-y: auto;
+}
+.conveyor-panel h1 {
+  margin: 0 0 2px;
+  font-size: 14px;
+}
+.conveyor-sub {
+  margin: 0 0 18px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.conveyor-transport {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.conveyor button {
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: #272b34;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.conveyor button:hover {
+  background: #313641;
+}
+.conveyor button:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+.conveyor .conveyor-play {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: #0d1710;
+  font-weight: 600;
+}
+.conveyor .conveyor-play.running {
+  background: #272b34;
+  border-color: var(--line);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.conveyor-field {
+  margin-bottom: 15px;
+}
+.conveyor-field label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+.conveyor-field label output {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--ink);
+  text-transform: none;
+}
+.conveyor input[type='range'] {
+  width: 100%;
+  accent-color: var(--signal);
+}
+.conveyor select {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: #272b34;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+}
+.conveyor-seg {
+  display: flex;
+  gap: 6px;
+}
+.conveyor .conveyor-seg button {
+  flex: 1;
+  padding: 8px 4px;
+  font-size: 12px;
+}
+.conveyor .conveyor-seg button[aria-pressed='true'] {
+  background: #313641;
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.conveyor-rule {
+  height: 1px;
+  background: var(--line);
+  margin: 18px 0;
+}
+.conveyor-hint {
+  font-size: 11px;
+  line-height: 1.9;
+  color: var(--muted);
+}
+.conveyor-hint kbd {
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+  background: #272b34;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+
+/* 좁은 화면: 패널을 아래로 내리고 페이지 스크롤 허용 */
+@media (max-width: 900px) {
+  .conveyor {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+}
