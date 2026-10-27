@@ -58,7 +58,11 @@ export default function RagSearch() {
             <p className="rag-answer">{result.answer}</p>
           ) : (
             result.sources.length > 0 && (
-              <p className="panel-warn">LLM 키(GEMINI_API_KEY)가 없어 가장 관련 있는 문장만 보여 줍니다.</p>
+              <p className="panel-warn">
+                {result.error
+                  ? `${result.error} — 가장 관련 있는 문장만 보여 줍니다. 잠시 후 다시 시도해 보세요.`
+                  : 'LLM 키(GEMINI_API_KEY)가 없어 가장 관련 있는 문장만 보여 줍니다.'}
+              </p>
             )
           )}
           {result.sources.length > 0 && (
