@@ -1,0 +1,10 @@
+{
+  // 이 레포를 VS Code로 열면 아래 확장 설치를 추천하는 알림이 뜬다.
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-azuretools.vscode-docker",
+    "dbaeumer.vscode-eslint",
+    "mhutchie.git-graph"
+  ]
+}

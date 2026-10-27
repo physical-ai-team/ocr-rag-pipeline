@@ -5,9 +5,12 @@
   WS   /api/ws/phone/{sid}             폰 → 서버: JPEG 프레임(바이너리)
   WS   /api/ws/dash/{sid}              서버 → 대시보드: {"type":"status", phone_connected, frames}
   GET  /api/session/{sid}/latest.jpg   가장 최근 프레임 (카메라 방향 확인용)
+  저장 현황(GET /api/stored, WS /api/ws/stored)은 storage.py, RAG(POST /api/rag)는 rag.py
 """
+import asyncio
 import os
 import time
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Response, WebSocket, WebSocketDisconnect
@@ -15,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from . import rag, storage
 from .frames import frame_queue
 from .sessions import SESSION_TTL_SECONDS, store
 
@@ -26,7 +30,18 @@ CLOSE_NO_SESSION = 4404  # 없는/만료된 세션
 CLOSE_REPLACED = 4409  # 같은 세션에 다른 폰이 붙어서 밀려남
 CLOSE_EXPIRED = 4410  # 연결 중 세션 만료
 
-app = FastAPI(title="ocr-rag api")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # frame_queue 의 프레임을 pipeline 으로 보내는 일꾼 (OCR_WORKER=0 이면 끔: 테스트용)
+    worker = asyncio.create_task(storage.ocr_worker()) if os.getenv("OCR_WORKER", "1") == "1" else None
+    yield
+    if worker:
+        worker.cancel()
+
+
+app = FastAPI(title="ocr-rag api", lifespan=lifespan)
+app.include_router(storage.router)
+app.include_router(rag.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000").split(","),

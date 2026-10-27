@@ -2,7 +2,19 @@
 
 OCR 및 벡터 임베딩 기반 영문 텍스트 추출·검색 파이프라인
 
-- [처음 세팅 가이드 (conda 처음이면 여기부터)](docs/00-처음-세팅-가이드.md) · [기획](docs/01-기획.md) · [아키텍처·Docker 구성](docs/02-아키텍처-도커.md) · [Git 작업 규칙](docs/03-Git-작업규칙.md)
+- [처음 세팅 가이드 (conda 처음이면 여기부터)](docs/00-처음-세팅-가이드.md) · [기획](docs/01-기획.md) · [아키텍처·Docker 구성](docs/02-아키텍처-도커.md) · [Git 작업 규칙](docs/03-Git-작업규칙.md) · [QR·영상 전송](docs/04-QR-영상전송.md) · [저장 현황·RAG·Docker 실행](docs/05-저장현황-RAG-도커.md)
+
+## 전체 실행 (Docker)
+
+Docker Desktop 을 켜 둔 상태에서:
+
+```bash
+copy .env.example .env      # 처음 한 번 (키는 팀 채팅으로 받아서 채우기, 비워 둬도 동작)
+npm run build
+docker compose up --build   # 처음엔 10분 이상 걸릴 수 있음
+```
+
+→ http://localhost:8000/dashboard
 
 ## 개발 환경 세팅 (처음 한 번만)
 
