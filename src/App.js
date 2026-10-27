@@ -83,6 +83,27 @@ const DemoButton = styled('button', {
   },
 });
 
+// 시연용 화면(/conveyor, /dashboard)으로 바로 가는 버튼. 두 화면을 나란히 띄우도록 새 탭으로 연다
+const NavActions = styled('div', {
+  display: 'flex',
+  gap: '8px',
+});
+
+const PageLink = styled('a', {
+  border: '1px solid $accent',
+  color: '$accent',
+  padding: '7px 14px',
+  borderRadius: '20px',
+  fontWeight: '700',
+  fontSize: '13px',
+  textDecoration: 'none',
+  transition: 'all 0.2s',
+  '&:hover': {
+    backgroundColor: '$accent',
+    color: '#0a0d14',
+  },
+});
+
 // 히어로 섹션
 const HeroSection = styled('section', {
   maxWidth: '1100px',
@@ -289,9 +310,17 @@ function App() {
           <a href="#architecture">아키텍처</a>
           <a href="#docs">문서</a>
         </NavLinks>
-        <DemoButton onClick={() => window.scrollTo({ top: 300, behavior: 'smooth' })}>
-          데모 실행하기
-        </DemoButton>
+        <NavActions>
+          <PageLink href="/conveyor" target="_blank" rel="noopener">
+            컨베이어 열기
+          </PageLink>
+          <PageLink href="/dashboard" target="_blank" rel="noopener">
+            대시보드 열기
+          </PageLink>
+          <DemoButton onClick={() => window.scrollTo({ top: 300, behavior: 'smooth' })}>
+            데모 실행하기
+          </DemoButton>
+        </NavActions>
       </Navbar>
 
       {/* 히어로 타이틀 섹션 */}
