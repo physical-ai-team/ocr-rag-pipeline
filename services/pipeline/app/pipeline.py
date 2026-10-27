@@ -200,6 +200,45 @@ class VectorStore:
         self._t().delete().neq("id", "").execute()
 
 
+class MemoryStore:
+    """Supabase 키가 없을 때 쓰는 메모리 저장소 (VectorStore 와 같은 메서드).
+    서버를 껐다 켜면 내용이 사라지므로 개발·테스트용."""
+
+    def __init__(self):
+        self.rows: list[dict] = []
+
+    def count(self) -> int:
+        return len(self.rows)
+
+    def nearest(self, emb: list[float], k: int = 1) -> list[dict]:
+        q = np.array(emb)
+        scored = [(float(np.dot(q, r["embedding"])), r) for r in self.rows]  # 정규화 벡터라 내적 = 코사인
+        scored.sort(key=lambda t: t[0], reverse=True)
+        return [{"id": r["id"], "text": r["text"], "meta": r["meta"], "score": round(s, 4)}
+                for s, r in scored[:k]]
+
+    def add(self, text: str, emb: list[float], meta: dict) -> str:
+        _id = uuid.uuid4().hex[:12]
+        self.rows.append({"id": _id, "text": text, "embedding": np.array(emb), "meta": meta})
+        return _id
+
+    def recent(self, limit: int = 30, session: str | None = None) -> list[dict]:
+        rows = [r for r in self.rows if not session or r["meta"].get("session") == session]
+        return [{"id": r["id"], "text": r["text"], "meta": r["meta"],
+                 "vector_preview": [round(float(x), 4) for x in r["embedding"][:8]]}
+                for r in reversed(rows[-limit:])]
+
+    def reset(self):
+        self.rows.clear()
+
+
+def make_store():
+    if config.SUPABASE_URL and config.SUPABASE_KEY:
+        return VectorStore(config.SUPABASE_URL, config.SUPABASE_KEY, config.COLLECTION)
+    print("[pipeline] SUPABASE_URL/KEY 가 없어 메모리 저장소를 씁니다 (재시작하면 사라짐)")
+    return MemoryStore()
+
+
 # ════════════════════════════════════════════════════
 # 파이프라인
 # ════════════════════════════════════════════════════
@@ -207,7 +246,7 @@ class Pipeline:
     def __init__(self):
         self.ocr = OCREngine(config.OCR_ENGINE)
         self.embedder = Embedder(config.EMBED_MODEL)
-        self.store = VectorStore(config.SUPABASE_URL, config.SUPABASE_KEY, config.COLLECTION)
+        self.store = make_store()
         self.ready = False
         self.load_error: str | None = None
         self._seen: set[str] = set()   # 정확히 같은 문장은 임베딩 전에 빠르게 거름
