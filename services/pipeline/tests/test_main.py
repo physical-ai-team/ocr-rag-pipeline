@@ -26,7 +26,7 @@ def client():
 
 
 def fake_ocr(monkeypatch, text):
-    monkeypatch.setattr(main.pipe.ocr, "read", lambda img: [(text, 0.99)])
+    monkeypatch.setattr(main.pipe.ocr, "read_columns", lambda img: [[(text, 0.99)]])
 
 
 def test_health(client):

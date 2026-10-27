@@ -23,5 +23,6 @@ dependencies:
       - supabase==2.33.0
       - sentence-transformers==6.2.0
       - easyocr==1.7.2
+      - pytesseract==0.3.13   # OCR_ENGINE=tesseract 쓸 때만 필요 (Tesseract 본체는 별도 설치)
       # 테스트
       - pytest==9.1.1

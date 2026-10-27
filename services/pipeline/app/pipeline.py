@@ -37,36 +37,58 @@ class OCREngine:
             raise ValueError(f"알 수 없는 OCR_ENGINE: {self.engine}")
 
     def read(self, img: Image.Image) -> list[tuple[str, float]]:
-        """이미지 → [(줄 텍스트, 신뢰도 0~1)] (위→아래, 왼→오 순서)"""
+        """이미지 → [(줄 텍스트, 신뢰도 0~1)] (열 순서대로, 열 안에서는 위→아래)"""
+        return [ln for col in self.read_columns(img) for ln in col]
+
+    def read_columns(self, img: Image.Image) -> list[list[tuple[str, float]]]:
+        """이미지 → 열(카드)별 줄 목록. 화면에 카드가 여러 장 나란히 있어도 서로 섞이지 않게 함"""
         if config.FAKE_MODELS:
-            return [(getattr(img, "fake_text", ""), 0.99)]
+            return [[(getattr(img, "fake_text", ""), 0.99)]]
 
         if self.engine == "easyocr":
-            res = self._reader.readtext(np.array(img), detail=1, paragraph=False)
-            # 박스 왼쪽 위 좌표로 읽기 순서 정렬 (같은 줄 판정은 높이의 절반 기준)
+            res = self._reader.readtext(np.array(img), detail=1, paragraph=False,
+                                        mag_ratio=config.OCR_MAG_RATIO)
             items = []
             for box, text, conf in res:
                 ys = [p[1] for p in box]
                 xs = [p[0] for p in box]
-                h = max(ys) - min(ys) or 1
-                items.append((min(ys), min(xs), h, text, float(conf)))
-            items.sort(key=lambda t: (t[0], t[1]))
-            lines, cur, cur_y, cur_h = [], [], None, None
-            for y, x, h, text, conf in items:
-                if cur and abs(y - cur_y) > cur_h * 0.5:
-                    lines.append(cur)
-                    cur = []
-                if not cur:
-                    cur_y, cur_h = y, h
-                cur.append((x, text, conf))
-            if cur:
-                lines.append(cur)
+                items.append((min(ys), min(xs), max(xs), max(ys) - min(ys) or 1, text, float(conf)))
+
+            # 1) 가로 범위가 겹치는 박스끼리 같은 열로 묶음 (카드 사이 빈 공간에서 열이 갈림)
+            items.sort(key=lambda t: t[1])
+            cols, col_right = [], None
+            for it in items:
+                if cols and it[1] <= col_right:
+                    cols[-1].append(it)
+                    col_right = max(col_right, it[2])
+                else:
+                    cols.append([it])
+                    col_right = it[2]
+
+            # 2) 열 안에서 박스 왼쪽 위 좌표로 읽기 순서 정렬 (같은 줄 판정은 높이의 절반 기준)
             out = []
-            for ln in lines:
-                ln.sort(key=lambda t: t[0])
-                out.append((" ".join(t[1] for t in ln), sum(t[2] for t in ln) / len(ln)))
+            for col in cols:
+                col.sort(key=lambda t: (t[0], t[1]))
+                lines, cur, cur_y, cur_h = [], [], None, None
+                for y, x, _, h, text, conf in col:
+                    if cur and abs(y - cur_y) > cur_h * 0.5:
+                        lines.append(cur)
+                        cur = []
+                    if not cur:
+                        cur_y, cur_h = y, h
+                    cur.append((x, text, conf))
+                if cur:
+                    lines.append(cur)
+                col_lines = []
+                for ln in lines:
+                    ln.sort(key=lambda t: t[0])
+                    col_lines.append((" ".join(t[1] for t in ln), sum(t[2] for t in ln) / len(ln)))
+                out.append(col_lines)
             return out
 
+        return [self._read_tesseract(img)]
+
+    def _read_tesseract(self, img: Image.Image) -> list[tuple[str, float]]:
         # tesseract: 단어 단위 결과를 줄 단위로 묶음
         from pytesseract import Output
         d = self._reader.image_to_data(img.convert("L"), lang="eng", output_type=Output.DICT)
@@ -100,6 +122,10 @@ def clean_text(lines: list[tuple[str, float]]) -> str:
     text = re.sub(r"(\w)-\s+(\w)", r"\1\2", text)   # 줄바꿈 하이픈 합치기
     text = re.sub(r"\s+", " ", text)
     text = re.sub(r"\s+([,.;:!?])", r"\1", text)
+    # EasyOCR이 마침표를 : ; _ 로 잘못 읽는 경우 복원 (뒤에 대문자 단어가 오거나 맨 끝일 때)
+    text = re.sub(r"[:;_](?=\s+[A-Z])", ".", text)
+    text = re.sub(r"[:;_]\s*$", ".", text)
+    text = re.sub(r"(\w)_", r"\1,", text)            # 나머지 _ 는 대부분 쉼표
     return text.strip()
 
 
@@ -276,13 +302,15 @@ class Pipeline:
         img = img or self.decode(jpeg)
 
         # 03 OCR
-        lines = self.ocr.read(img)
-        text = clean_text(lines)
+        cols = self.ocr.read_columns(img)
+        col_texts = [t for t in (clean_text(c) for c in cols) if t]
+        text = "\n".join(col_texts)
         t_ocr = time.time()
 
-        result = {"frame_no": frame_no, "raw_lines": len(lines), "text": text,
+        result = {"frame_no": frame_no, "raw_lines": sum(len(c) for c in cols), "text": text,
                   "stored": [], "duplicates": 0, "ocr_ms": int((t_ocr - t0) * 1000)}
-        sentences = split_sentences(text)
+        # 열(카드)마다 따로 문장 분리 → 카드 경계에서 잘린 문장도 카드별로 버려짐
+        sentences = [s for t in col_texts for s in split_sentences(t)]
         fresh = [s for s in sentences if normalize(s) not in self._seen]
         result["duplicates"] += len(sentences) - len(fresh)
         if not fresh:

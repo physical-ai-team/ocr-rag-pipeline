@@ -19,6 +19,8 @@ def _f(name, default):
 OCR_ENGINE = os.getenv("OCR_ENGINE", "easyocr")       # easyocr | tesseract
 USE_GPU = os.getenv("USE_GPU", "0") == "1"
 OCR_MIN_CONF = _f("OCR_MIN_CONF", 0.40)               # 이 신뢰도 미만 조각은 버림
+# EasyOCR 확대 배율: 1.5면 a·I·at 같은 짧은 단어를 덜 놓침 (CPU에서 프레임당 약 1.5배 느려짐, 1.0 = 확대 안 함)
+OCR_MAG_RATIO = _f("OCR_MAG_RATIO", 1.5)
 MIN_CHUNK_CHARS = int(os.getenv("MIN_CHUNK_CHARS", "20"))
 FULL_SENTENCES = os.getenv("FULL_SENTENCES", "1") == "1"   # 프레임 가장자리에서 잘린 문장 버리기
 

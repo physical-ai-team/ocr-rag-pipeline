@@ -35,3 +35,7 @@ __pycache__/
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# pipeline runtime data
+certs/
+chroma_db/
