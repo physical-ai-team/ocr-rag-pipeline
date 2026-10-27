@@ -10,3 +10,10 @@ dependencies:
   - pip
   - pip:
       - python-dotenv==1.0.1
+      # OCR → 임베딩 → Vector DB 파이프라인 (run.py, app/)
+      - pillow==13.0.0
+      - numpy==2.4.6
+      - supabase==2.33.0
+      - sentence-transformers==6.2.0
+      - easyocr==1.7.2
+      - pytesseract==0.3.13   # OCR_ENGINE=tesseract 쓸 때만 필요 (Tesseract 본체는 별도 설치)
