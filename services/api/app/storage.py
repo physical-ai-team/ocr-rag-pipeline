@@ -2,6 +2,7 @@
 
 - ocr_worker: frame_queue 에서 프레임을 꺼내 pipeline 에 보내고, 새로 저장된 문장을 대시보드에 푸시한다.
 - GET /api/stored     처음 화면을 열 때 최근 저장 목록 + 전체 개수
+- GET /api/passages   카드 제목으로 묶은 지문 목록 (기획의 "11 / 100 저장"은 지문 수)
 - WS  /api/ws/stored  새로 저장될 때마다 {"type":"stored","items":[...],"total":n}
 
 저장 현황은 QR 세션과 상관없이 DB 전체 기준이라 세션 없이 접속한다.
@@ -61,16 +62,25 @@ async def ocr_worker() -> None:
             })
 
 
-@router.get("/api/stored")
-async def stored(limit: int = 30):
+async def _get_from_pipeline(path: str, **params) -> dict:
     try:
-        res = await pipeline.get("/recent", params={"limit": limit})
+        res = await pipeline.get(path, params=params)
     except httpx.HTTPError as e:
         raise HTTPException(status_code=503, detail="pipeline 서비스에 연결할 수 없습니다") from e
     if res.status_code != 200:
         raise HTTPException(status_code=503, detail=res.json().get("detail", "pipeline 준비 중"))
-    body = res.json()
+    return res.json()
+
+
+@router.get("/api/stored")
+async def stored(limit: int = 30):
+    body = await _get_from_pipeline("/recent", limit=limit)
     return {"items": [_item(r) for r in body["items"]], "total": body["total"]}
+
+
+@router.get("/api/passages")
+async def passages():
+    return await _get_from_pipeline("/passages")
 
 
 @router.websocket("/api/ws/stored")

@@ -38,6 +38,22 @@
 .st-text { flex: 1; line-height: 1.5; }
 .st-tag { color: #60a5fa; font-size: 11px; flex-shrink: 0; }
 .st-empty { color: #64748b; font-size: 13px; padding: 12px 0; }
+.st-sub { margin: 8px 0 0; color: #64748b; font-size: 12px; }
+.st-title { display: block; color: #64748b; font-size: 11px; margin-top: 2px; }
+.st-tabs { display: flex; gap: 6px; margin-top: 14px; }
+.st-tabs button {
+  flex: 1;
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.st-tabs button[aria-selected='true'] { color: #60a5fa; border-color: #60a5fa; }
+.st-tabs + .st-list, .st-tabs + .panel-error + .st-list { margin-top: 10px; }
 
 /* ③ RAG 검색 */
 .rag-form { display: flex; gap: 8px; margin-top: 16px; }
