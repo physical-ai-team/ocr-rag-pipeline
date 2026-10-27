@@ -3,6 +3,7 @@
 - ocr_worker: frame_queue 에서 프레임을 꺼내 pipeline 에 보내고, 새로 저장된 문장을 대시보드에 푸시한다.
 - GET /api/stored     처음 화면을 열 때 최근 저장 목록 + 전체 개수
 - GET /api/passages   카드 제목으로 묶은 지문 목록 (기획의 "11 / 100 저장"은 지문 수)
+- GET /api/pipeline   pipeline 상태 (모델 로드 중인지, 꺼졌는지, 저장소 종류) → 대시보드 안내 문구용
 - WS  /api/ws/stored  새로 저장될 때마다 {"type":"stored","items":[...],"total":n}
 
 저장 현황은 QR 세션과 상관없이 DB 전체 기준이라 세션 없이 접속한다.
@@ -81,6 +82,17 @@ async def stored(limit: int = 30):
 @router.get("/api/passages")
 async def passages():
     return await _get_from_pipeline("/passages")
+
+
+@router.get("/api/pipeline")
+async def pipeline_status():
+    """pipeline 이 꺼져 있어도 에러 대신 reachable=false 로 답한다 (대시보드가 상태를 보여 줄 수 있게)."""
+    try:
+        res = await pipeline.get("/health", timeout=5)
+        res.raise_for_status()
+    except httpx.HTTPError:
+        return {"reachable": False, "ready": False, "load_error": None, "store": None}
+    return {"reachable": True, **res.json()}
 
 
 @router.websocket("/api/ws/stored")
