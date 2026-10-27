@@ -2,7 +2,7 @@
 
 OCR 및 벡터 임베딩 기반 영문 텍스트 추출·검색 파이프라인
 
-- [기획](docs/01-기획.md) · [아키텍처·Docker 구성](docs/02-아키텍처-도커.md) · [Git 작업 규칙](docs/03-Git-작업규칙.md)
+- [처음 세팅 가이드 (conda 처음이면 여기부터)](docs/00-처음-세팅-가이드.md) · [기획](docs/01-기획.md) · [아키텍처·Docker 구성](docs/02-아키텍처-도커.md) · [Git 작업 규칙](docs/03-Git-작업규칙.md)
 
 ## 개발 환경 세팅 (처음 한 번만)
 
@@ -12,10 +12,9 @@ OCR 및 벡터 임베딩 기반 영문 텍스트 추출·검색 파이프라인
 | --- | --- | --- |
 | Git | 최신 | https://git-scm.com/downloads |
 | Node.js | **20 LTS** | https://nodejs.org (20.x 버전 선택) |
-| Miniconda | 최신 | https://docs.conda.io/en/latest/miniconda.html |
+| Miniforge (conda) | 최신 | https://github.com/conda-forge/miniforge/releases/latest |
 
-> Windows에서 Miniconda 설치 후에는 시작 메뉴의 **Anaconda Prompt**에서 아래 명령어를 실행하세요.
-> (VS Code 터미널에서 쓰려면 Anaconda Prompt에서 `conda init powershell` 실행 후 VS Code를 재시작)
+> **conda를 처음 써보면 [처음 세팅 가이드](docs/00-처음-세팅-가이드.md)를 그대로 따라 하세요.** (설치 옵션, VS Code 연결, 자주 나는 오류까지 정리돼 있음)
 
 설치 확인:
 
