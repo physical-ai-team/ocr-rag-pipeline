@@ -1,0 +1,12 @@
+# 팀 공용 Python 환경
+# 처음:      conda env create -f environment.yml
+# 업데이트:  conda env update -f environment.yml --prune
+# 패키지를 추가할 때는 이 파일을 수정해서 커밋하고 팀에 공지하세요. (버전은 == 로 고정)
+name: ocr-rag
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - python-dotenv==1.0.1
