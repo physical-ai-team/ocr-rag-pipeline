@@ -38,7 +38,8 @@
 
 | 주소 | 용도 |
 | --- | --- |
-| `GET /api/stored?limit=30` | `{items:[{id,text,meta}], total}` 최근 저장 목록 |
+| `GET /api/stored?limit=30` | `{items:[{id,text,meta}], total}` 최근 저장 문장 목록 |
+| `GET /api/passages` | `{passages:[{no,title,sentences,first_ts,last_ts}], untitled_sentences, total_sentences}` 카드 제목으로 묶은 지문 목록 |
 | `WS /api/ws/stored` | 서버 → 대시보드: `{"type":"stored","items":[...],"total":n}` (새로 저장될 때만) |
 | `POST /api/rag` | `{"question":"...","k":5}` → `{answer, sources:[{n,id,text,score}], model}` |
 
@@ -52,6 +53,7 @@
 | `POST /process?session=..&frame_no=..` | 본문: JPEG → `{text, stored:[...], duplicates, ocr_ms, total_ms, total}` |
 | `POST /search` | `{"query","k"}` → `{results:[{id,text,meta,score}]}` |
 | `GET /recent?limit=30` | `{items, total}` |
+| `GET /passages` | 지문 목록 (`app/passages.py`) |
 
 모델 로드 중에는 `/process`·`/search`·`/recent` 가 `503` 을 준다. api 는 그동안 들어온 프레임을 버린다.
 
@@ -93,7 +95,10 @@ cd services/pipeline && pytest   # FAKE_MODELS=1 + 메모리 저장소라 모델
 - pipeline 이미지는 torch 때문에 크다 (수 GB). Docker Desktop 디스크 공간을 확인한다.
 - OCR 은 CPU 에서 프레임 하나에 몇 초 걸린다. 그동안 들어온 프레임은 `frame_queue`(최대 5장)에서 오래된 것부터 버려진다 → 항상 최신 화면을 처리한다.
 - 같은 문장은 두 번 저장하지 않는다: 글자가 같으면 바로 거르고, OCR 오차로 조금 다르면 코사인 유사도 `DEDUP_SIM`(0.92) 이상일 때 거른다.
-- 저장 현황 숫자(`total`)는 QR 세션이 아니라 **DB 전체** 기준이다. 목표 100개는 `StorageStatus.js` 의 `GOAL`.
+- 저장 현황 숫자는 **지문 수 / 100** 이다 (QR 세션이 아니라 DB 전체 기준). 목표 100 은 `StorageStatus.js` 의 `GOAL`.
+  - OCR 이 카드 맨 위 제목 줄을 따로 떼서 문장마다 `meta.title` 로 저장하고, 같은 제목끼리 묶어 센다.
+  - OCR 이 제목을 조금 틀리게 읽어도 (`Instrcctions For The New Eettle`) 글자가 80% 이상 같으면 같은 지문으로 합친다.
+  - 카드 윗부분이 화면 밖이라 제목이 안 찍힌 문장은 "제목 미확인 문장"으로 따로 센다.
 - Gemini 는 **무료 등급**(Google AI Studio)이라 분당·하루 요청 수 제한이 있고, 혼잡할 때 먼저 밀린다.
   그래서 가벼운 `GEMINI_MODEL`(기본 `gemini-3.5-flash-lite`)을 먼저 쓰고, 실패(503 혼잡·429 한도·20초 초과)하면
   `GEMINI_FALLBACK_MODEL`(기본 `gemini-3.6-flash`)로 한 번 더 시도한다. 둘 다 실패해도 근거 문장은 보여 준다.
@@ -104,5 +109,5 @@ cd services/pipeline && pytest   # FAKE_MODELS=1 + 메모리 저장소라 모델
 - [x] Supabase 키 받아서 `.env` 에 넣고 실제 DB 로 확인
 - [x] Gemini 키 넣고 실제 답변 확인 (영어·한국어 질문, 없는 내용 질문)
 - [ ] RAG 정확도 평가 세트 (`src/data/passages.js` 를 정답지로 질문 30~50개)
-- [ ] 문장 대신 "문서" 단위로 묶어서 저장 현황에 제목 표시 (기획 화면은 문서 제목 목록)
+- [x] 문장 대신 "지문" 단위로 묶어서 저장 현황에 제목 표시
 - [ ] 기존 `App.js` 랜딩 페이지와 `/dashboard` 연결 (프론트 담당과 상의)

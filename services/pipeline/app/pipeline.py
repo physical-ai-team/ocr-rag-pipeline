@@ -315,6 +315,16 @@ class VectorStore:
                          "vector_preview": [round(float(x), 4) for x in e[:8]]})
         return rows
 
+    def titles(self) -> list[dict]:
+        """모든 문장의 (카드 제목, 저장 시각). 지문 단위 저장 현황용이라 벡터는 안 가져온다."""
+        rows, page = [], 1000   # Supabase 는 한 번에 최대 1000행
+        while True:
+            r = (self._t().select("title:meta->>title, ts:meta->>ts")
+                 .order("created_at").range(len(rows), len(rows) + page - 1).execute())
+            rows += [{"title": d["title"], "ts": float(d["ts"] or 0)} for d in r.data]
+            if len(r.data) < page:
+                return rows
+
     def reset(self):
         self._t().delete().neq("id", "").execute()
 
@@ -346,6 +356,9 @@ class MemoryStore:
         return [{"id": r["id"], "text": r["text"], "meta": r["meta"],
                  "vector_preview": [round(float(x), 4) for x in r["embedding"][:8]]}
                 for r in reversed(rows[-limit:])]
+
+    def titles(self) -> list[dict]:
+        return [{"title": r["meta"].get("title"), "ts": r["meta"].get("ts", 0)} for r in self.rows]
 
     def reset(self):
         self.rows.clear()

@@ -8,6 +8,8 @@ from app import rag, storage
 from app.main import app
 
 STORED = [{"id": "a1", "text": "Paper was invented in ancient China.", "meta": {"session": "s"}}]
+PASSAGES = {"passages": [{"no": 1, "title": "A Short History of Paper", "sentences": 1, "first_ts": 1, "last_ts": 1}],
+            "untitled_sentences": 0, "total_sentences": 1}
 
 
 def fake_pipeline(request: httpx.Request) -> httpx.Response:
@@ -16,6 +18,8 @@ def fake_pipeline(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"stored": STORED, "duplicates": 0, "total": 7})
     if request.url.path == "/recent":
         return httpx.Response(200, json={"items": STORED, "total": 7})
+    if request.url.path == "/passages":
+        return httpx.Response(200, json=PASSAGES)
     if request.url.path == "/search":
         assert json.loads(request.content)["query"] == "Where was paper invented?"
         return httpx.Response(200, json={"results": [{**STORED[0], "score": 0.81}]})
@@ -32,6 +36,10 @@ def mock_pipeline(monkeypatch):
 def test_stored_list():
     body = TestClient(app).get("/api/stored").json()
     assert body == {"items": STORED, "total": 7}
+
+
+def test_passages_list():
+    assert TestClient(app).get("/api/passages").json() == PASSAGES
 
 
 def test_frame_is_processed_and_pushed_to_storage_watchers():

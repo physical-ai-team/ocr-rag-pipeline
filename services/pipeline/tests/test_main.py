@@ -64,5 +64,13 @@ def test_search_and_recent(client, monkeypatch):
     assert recent["total"] >= 2
 
 
+def test_passages_endpoint(client, monkeypatch):
+    monkeypatch.setattr(main.pipe.ocr, "read_columns", lambda img: [[
+        ("ON Losing Things", 0.99), ("Keys are never lost in interesting places. They are found in the coat.", 0.99)]])
+    client.post("/process", params={"session": "s3"}, content=jpeg())
+    body = client.get("/passages").json()
+    assert [(p["title"], p["sentences"]) for p in body["passages"]] == [("On Losing Things", 2)]
+
+
 def test_empty_body_is_rejected(client):
     assert client.post("/process", params={"session": "s"}, content=b"").status_code == 400

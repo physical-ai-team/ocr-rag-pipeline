@@ -5,6 +5,7 @@
   POST /process?session=..&frame_no=.. 본문: JPEG 바이트 → OCR·임베딩·저장 결과 + total
   POST /search                         {"query": "...", "k": 5} → 질문과 가까운 문장 top-k (RAG 용)
   GET  /recent?limit=30                최근 저장된 문장 + total
+  GET  /passages                       카드 제목으로 묶은 지문 목록 (지문 단위 저장 현황)
 """
 import threading
 from contextlib import asynccontextmanager
@@ -13,6 +14,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
+from .passages import group_passages
 from .pipeline import Pipeline
 
 pipe: Pipeline | None = None
@@ -89,3 +91,8 @@ async def search(body: SearchBody):
 def recent(limit: int = 30, session: str | None = None):
     p = ready_pipe()
     return {"items": p.store.recent(limit=min(limit, 100), session=session), "total": p.store.count()}
+
+
+@app.get("/passages")
+def passages():
+    return group_passages(ready_pipe().store.titles())
