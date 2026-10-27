@@ -12,6 +12,8 @@ PC 웹페이지의 영어 원문을 휴대폰 카메라로 실시간 촬영 → 
 - Git 규칙: [docs/03-Git-작업규칙.md](docs/03-Git-작업규칙.md)
 - QR·영상 전송(api): [docs/04-QR-영상전송.md](docs/04-QR-영상전송.md)
 - 저장 현황·RAG·Docker 실행: [docs/05-저장현황-RAG-도커.md](docs/05-저장현황-RAG-도커.md)
+- 시연 체크리스트: [docs/06-시연-체크리스트.md](docs/06-시연-체크리스트.md)
+- RAG 평가: `eval/rag_questions.json`(질문·정답 42개), `python eval/rag_eval.py` (api 가 떠 있어야 함)
 
 ## 현재 상태
 

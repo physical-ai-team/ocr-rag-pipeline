@@ -20,6 +20,8 @@ def fake_pipeline(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"items": STORED, "total": 7})
     if request.url.path == "/passages":
         return httpx.Response(200, json=PASSAGES)
+    if request.url.path == "/health":
+        return httpx.Response(200, json={"ready": False, "load_error": None, "store": "VectorStore", "total": 0})
     if request.url.path == "/search":
         assert json.loads(request.content)["query"] == "Where was paper invented?"
         return httpx.Response(200, json={"results": [{**STORED[0], "score": 0.81}]})
@@ -108,6 +110,21 @@ def test_rag_returns_sources_when_all_models_fail(monkeypatch):
     assert body["answer"] is None
     assert len(body["sources"]) == 1
     assert "429 quota" in body["error"]
+
+
+def test_pipeline_status_while_loading():
+    body = TestClient(app).get("/api/pipeline").json()
+    assert body["reachable"] is True
+    assert body["ready"] is False
+
+
+def test_pipeline_status_when_down(monkeypatch):
+    def down(request):
+        raise httpx.ConnectError("down")
+
+    monkeypatch.setattr(storage, "pipeline", httpx.AsyncClient(base_url="http://p", transport=httpx.MockTransport(down)))
+    assert TestClient(app).get("/api/pipeline").json() == {
+        "reachable": False, "ready": False, "load_error": None, "store": None}
 
 
 def test_pipeline_down_gives_503(monkeypatch):

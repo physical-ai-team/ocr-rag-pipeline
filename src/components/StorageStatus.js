@@ -16,6 +16,7 @@ export default function StorageStatus() {
   const [total, setTotal] = useState(0);
   const [live, setLive] = useState(false);
   const [error, setError] = useState('');
+  const [pipe, setPipe] = useState(null); // GET /api/pipeline: { reachable, ready, load_error, store }
   const refetchTimer = useRef(null);
 
   const fetchJson = async (path) => {
@@ -47,6 +48,31 @@ export default function StorageStatus() {
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  // pipeline 상태: 모델 로드 중엔 3초마다, 준비되면 15초마다 확인. 막 준비됐으면 목록을 다시 불러온다
+  useEffect(() => {
+    let timer;
+    let wasReady = false;
+    let stopped = false;
+    const check = async () => {
+      let status;
+      try {
+        status = await fetchJson('/api/pipeline');
+      } catch {
+        status = { reachable: false, ready: false };
+      }
+      if (stopped) return;
+      setPipe(status);
+      if (status.ready && !wasReady) load();
+      wasReady = status.ready;
+      timer = setTimeout(check, status.ready ? 15000 : 3000);
+    };
+    check();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
   }, [load]);
 
   useEffect(() => {
@@ -113,7 +139,20 @@ export default function StorageStatus() {
         </button>
       </div>
 
-      {error && <p className="panel-error">{error}</p>}
+      {pipe && !pipe.reachable && (
+        <p className="panel-error">pipeline 서비스에 연결할 수 없습니다. docker compose 가 켜져 있는지 확인하세요.</p>
+      )}
+      {pipe?.reachable && !pipe.ready && (
+        pipe.load_error ? (
+          <p className="panel-error">OCR·임베딩 모델 로드 실패: {pipe.load_error}</p>
+        ) : (
+          <p className="panel-warn">OCR·임베딩 모델을 불러오는 중입니다 (보통 1분 이내). 지금 찍은 화면은 저장되지 않아요.</p>
+        )
+      )}
+      {pipe?.ready && pipe.store === 'MemoryStore' && (
+        <p className="panel-warn">Supabase 키가 없어 메모리에 저장 중입니다. 서버를 다시 켜면 사라져요 (.env 확인).</p>
+      )}
+      {error && pipe?.ready && <p className="panel-error">{error}</p>}
 
       {tab === 'passages' ? (
         <ul className="st-list">
